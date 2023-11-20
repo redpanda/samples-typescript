@@ -11,7 +11,7 @@
     "start.watch": "nodemon src/worker.ts",
     "test": "mocha --require ts-node/register --require source-map-support/register src/mocha/*.test.ts",
     "test.watch": "mocha --require ts-node/register --require source-map-support/register src/mocha/*.test.ts -w --watch-files src",
-    "test.coverage": "nyc --reporter=lcov --reporter=text-summary mocha --require ts-node/register --require source-map-support/register src/mocha/*.test.ts",
+    "test.coverage": "nyc --reporter=lcov --reporter=html mocha --require ts-node/register --require source-map-support/register src/mocha/*.test.ts",
     "workflow": "ts-node src/client.ts"
   },
   "nodemonConfig": {

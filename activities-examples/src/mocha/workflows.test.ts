@@ -7,7 +7,7 @@ import { after, afterEach, before, describe, it } from 'mocha';
 import sinon from 'sinon';
 import { v4 as uuid } from 'uuid';
 import * as activities from '../activities';
-import { httpWorkflow } from '../workflows';
+import { httpWorkflow, asyncActivityWorkflow, conditionalWorkflow } from '../workflows';
 import { WorkflowCoverage } from '@temporalio/nyc-test-coverage';
 
 const workflowCoverage = new WorkflowCoverage();
@@ -15,6 +15,12 @@ const workflowCoverage = new WorkflowCoverage();
 describe('example workflow', async function () {
   let shutdown: () => Promise<void>;
   let execute: () => ReturnType<typeof httpWorkflow>;
+  let execute2: () => ReturnType<typeof asyncActivityWorkflow>;
+
+  let execute3: () => ReturnType<typeof conditionalWorkflow>;
+  let execute4: () => ReturnType<typeof conditionalWorkflow>;
+
+
   let getClient: () => Client;
 
   this.slow(10_000);
@@ -53,6 +59,32 @@ describe('example workflow', async function () {
         // Use random ID because ID is meaningless for this test
         workflowId: `test-${uuid()}`,
       });
+
+    execute2 = () =>
+      client.workflow.execute(asyncActivityWorkflow, {
+        taskQueue: 'test-activities',
+        workflowExecutionTimeout: 10_000,
+        // Use random ID because ID is meaningless for this test
+        workflowId: `test2-${uuid()}`
+      });
+
+    execute3 = () =>
+      client.workflow.execute(conditionalWorkflow, {
+        taskQueue: 'test-activities',
+        workflowExecutionTimeout: 10_000,
+        // Use random ID because ID is meaningless for this test
+        workflowId: `test3-${uuid()}`,
+        args: [{ input: 42 }]
+      });
+
+    execute4 = () =>
+      client.workflow.execute(conditionalWorkflow, {
+        taskQueue: 'test-activities',
+        workflowExecutionTimeout: 10_000,
+        // Use random ID because ID is meaningless for this test
+        workflowId: `test4-${uuid()}`,
+        args: [{ input: 2 }]
+      });
   });
 
   after(async () => {
@@ -70,6 +102,23 @@ describe('example workflow', async function () {
   it('returns correct result', async () => {
     const result = await execute();
     assert.equal(result, 'The answer is 42');
+  });
+
+
+  it('returns correct result', async () => {
+    const result = await execute2();
+    assert.equal(result, 'The Peon says: 2');
+  });
+
+
+  it('returns correct result for execute3', async () => {
+    const result = await execute3();
+    assert.equal(result, 'The answer is 42');
+  });
+
+  it('returns correct result for execute4', async () => {
+    const result = await execute4();
+    assert.equal(result, 'The answer is not 42');
   });
 
   it('retries one failure', async () => {
