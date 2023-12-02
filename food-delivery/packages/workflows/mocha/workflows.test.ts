@@ -3,8 +3,8 @@ import { Runtime, DefaultLogger, Worker } from '@temporalio/worker'
 import { TestWorkflowEnvironment } from '@temporalio/testing'
 import assert from 'assert'
 import { describe, it } from 'mocha'
-import * as activities from 'activities'
-import { order } from '../../../packages/workflows'
+import * as activities from '../../activities'
+import { order } from '..'
 import { WorkflowCoverage } from '@temporalio/nyc-test-coverage'
 
 const workflowCoverage = new WorkflowCoverage()
@@ -28,7 +28,7 @@ describe('order workflow', async function () {
         workflowCoverage.augmentWorkerOptions({
           connection: env.nativeConnection,
           taskQueue: 'test-food-delivery',
-          workflowsPath: require.resolve('../../../packages/workflows'),
+          workflowsPath: require.resolve('..'),
           activities,
         })
       )
@@ -48,7 +48,7 @@ describe('order workflow', async function () {
   beforeEach(() => {
     start = () => {
       return env.client.workflow.start(order, {
-        taskQueue: 'test-expense',
+        taskQueue: 'test-food-delivery',
         workflowExecutionTimeout: 10_000,
         // Use random ID because ID is meaningless for this test
         workflowId: `test`,
