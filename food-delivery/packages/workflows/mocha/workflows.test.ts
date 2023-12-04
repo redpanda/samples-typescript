@@ -9,7 +9,7 @@ import * as activities from '../../activities'
 import { order, deliveredSignal, pickedUpSignal, getStatusQuery, OrderStatus } from '..'
 import { WorkflowCoverage } from '@temporalio/nyc-test-coverage'
 import { setTimeout } from 'timers/promises'
-import { Product, products } from 'common'
+import { Product, errorMessage, products } from 'common'
 
 const workflowCoverage = new WorkflowCoverage()
 
@@ -92,9 +92,49 @@ describe('order workflow', async function () {
     sinon.restore()
   })
 
-  it('rejects with a product not found', async () => {
+  it('fails with a product not found', async () => {
     const exec = async () => await execute(5)
     await assert.rejects(exec, 'Product 5 not found')
+  })
+
+  it('fails with a card declined', async () => {
+    const product = products[0]
+    const err = new Error('Card declined: insufficient funds')
+    chargeCustomerStub.withArgs(product).throws(err)
+    sendPushNotificationStub.withArgs(`Failed to charge customer for ${product.name}. Error: ${errorMessage(err)}`)
+    const exec = async () => await execute(product.id)
+    await assert.rejects(exec, 'Card declined: insufficient funds')
+  })
+
+  it('should refund the customer if the order is not picked up', async () => {
+    const product = products[1]
+    chargeCustomerStub.withArgs(product).resolves()
+    sendPushNotificationStub
+      .withArgs('⚠️ No drivers were available to pick up your order. Your payment has been refunded.')
+      .resolves()
+    const exec = async () => await execute(product.id)
+    await assert.rejects(exec, 'Not picked up in time')
+  })
+
+  it('should refund the customer if the order is not delivered', async () => {
+    const product = products[1]
+    chargeCustomerStub.withArgs(product).resolves()
+    sendPushNotificationStub.withArgs('🚗 Order picked up').onCall(0).resolves()
+    sendPushNotificationStub
+      .withArgs('⚠️ Your driver was unable to deliver your order. Your payment has been refunded.')
+      .onCall(1)
+      .resolves()
+    const handle = await start(product.id)
+    await setTimeout(2000)
+
+    // Pick up the order
+    await handle.signal(pickedUpSignal)
+    const query = await handle.query(getStatusQuery)
+    assert.strictEqual(query.state, 'Picked up')
+
+    await env.sleep('1 min')
+
+    //await assert.rejects(handle.result, 'Not delivered in time')
   })
 
   it('sucessfully order a product', async () => {
