@@ -3,9 +3,9 @@ import { ApplicationFailure, Context } from '@temporalio/activity'
 export const notificationService = {
   sendNotification({ type, message }: { type: string; message: string }) {
     const { log } = Context.current()
-    if (Math.random() < 0.7) {
-      throw new Error(`Failed to send ${type} notification. Unable to reach notification service.`)
-    }
+    // if (Math.random() < 0.7) {
+    //   throw new Error(`Failed to send ${type} notification. Unable to reach notification service.`)
+    // }
 
     log.info('Sent notification', { type, message })
   },
@@ -19,9 +19,9 @@ export const paymentService = {
     if (cents >= 3500) {
       throw ApplicationFailure.create({ nonRetryable: true, message: 'Card declined: insufficient funds' })
     }
-    if (Math.random() < 0.7) {
-      throw new Error('Failed to charge. Unable to reach payment service.')
-    }
+    // if (Math.random() < 0.7) {
+    //   throw new Error('Failed to charge. Unable to reach payment service.')
+    // }
     log.info('Charged', { cents })
   },
 
